@@ -35,4 +35,15 @@ cfg.requiredColumns = [ ...
     "roll_rate_degps", ...
     "vertical_accel_mps2" ...
 ];
+
+% --- Vehicle Physical Parameters (Bicycle Model) ---
+cfg.veh.m  = 1600;       % Mass [kg]
+cfg.veh.Iz = 2500;       % Yaw moment of inertia [kg*m^2]
+cfg.veh.lf = 1.2;        % Distance CG to front axle [m]
+cfg.veh.lr = 1.4;        % Distance CG to rear axle [m]
+cfg.veh.L  = cfg.veh.lf + cfg.veh.lr; % Total wheelbase [m]
+cfg.veh.Cf = 80000;      % Cornering stiffness front [N/rad] (per axle)
+cfg.veh.Cr = 100000;     % Cornering stiffness rear [N/rad] (per axle)
+cfg.veh.ratio = 15;      % Steering ratio (Steering Wheel Angle / Wheel Angle)
+
 end

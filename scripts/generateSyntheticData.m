@@ -4,7 +4,16 @@ function generateSyntheticData()
 % The signals are simplified but shaped to resemble common test/simulation
 % data used in objective vehicle dynamics analysis.
 
-outDir = fullfile("data", "synthetic");
+% Adjust directory to project root if called from scripts/
+currentDir = pwd;
+[~, folderName] = fileparts(currentDir);
+if strcmp(folderName, 'scripts')
+    baseDir = "..";
+else
+    baseDir = ".";
+end
+
+outDir = fullfile(baseDir, "data", "synthetic");
 if ~exist(outDir, "dir")
     mkdir(outDir);
 end
@@ -49,24 +58,30 @@ writeDataset(fullfile(outDir, "ride_bump.csv"), time_s, vehicle_speed_mps, steer
 fprintf("Synthetic datasets generated in %s\n", outDir);
 end
 
-function y = firstOrderResponse(t, u, gain, tau)
+function y = firstOrderResponse(t, u, gain, tau, noiseLevel)
 %FIRSTORDERRESPONSE Simple discrete first-order response y' = (gain*u-y)/tau.
+if nargin < 5, noiseLevel = 0.15; end
+
 y = zeros(size(u));
 for k = 2:numel(t)
     dt = t(k) - t(k-1);
     y(k) = y(k-1) + dt * ((gain * u(k) - y(k-1)) / tau);
 end
-y = y + 0.15 * randn(size(y));
+y = y + noiseLevel * randn(size(y));
 end
 
-function writeDataset(filename, time_s, vehicle_speed_mps, steering, yaw, latacc, vertical)
+function writeDataset(filename, time_s, vehicle_speed_mps, steering, yaw, latacc, vertical, noiseLevel)
 %WRITEDATASET Write a standard vehicle dynamics table to CSV.
-if nargin < 7
-    vertical = 0.08 * randn(size(time_s));
-end
+if nargin < 7 || isempty(vertical), vertical = 0.08 * randn(size(time_s)); end
+if nargin < 8, noiseLevel = 0.05; end
 
+% Add sensor noise and bias simulation
 longitudinal_accel_mps2 = 0.02 * randn(size(time_s));
-roll_rate_degps = 0.12 * latacc + 0.02 * randn(size(time_s));
+roll_rate_degps = 0.12 * latacc + noiseLevel * randn(size(time_s));
+
+% Add some noise to the main signals too
+yaw = yaw + noiseLevel * randn(size(yaw));
+latacc = latacc + (noiseLevel*2) * randn(size(latacc));
 
 T = table(time_s, vehicle_speed_mps, steering, yaw, latacc, ...
     longitudinal_accel_mps2, roll_rate_degps, vertical, ...

@@ -1,61 +1,82 @@
-function kpis = computeHandlingKPIs(data, events, cfg)
-%COMPUTEHANDLINGKPIS Compute basic handling/yaw-response KPIs.
+# Vehicle Dynamics KPI Toolbox
 
-window = data.time_s >= events.start_time_s(1) & data.time_s <= events.end_time_s(1);
-if ~any(window)
-    window = true(height(data), 1);
-end
+![MATLAB CI](https://github.com/tuo-username/vehicle-dynamics-kpi-toolbox/actions/workflows/matlab-ci.yml/badge.svg)
 
-steer = data.steering_wheel_angle_deg(window);
-yaw = data.yaw_rate_degps(window);
-latacc = data.lateral_accel_mps2(window);
-time = data.time_s(window);
+A MATLAB-based toolbox for processing vehicle dynamics data, extracting Key Performance Indicators (KPIs), and generating reports.
 
-peakLatAccel_mps2 = max(abs(latacc));
-peakYawRate_degps = max(abs(yaw));
-peakSteer_deg = max(abs(steer));
+## Features
 
-yawRateGain_1ps = safeDivide(peakYawRate_degps, peakSteer_deg);
-latAccelGain_mps2_per_deg = safeDivide(peakLatAccel_mps2, peakSteer_deg);
+- **Data Loading & Preprocessing**: Automated CSV loading, resampling, and low-pass filtering.
+- **Maneuver Detection**: Automatic detection of steering events based on configurable thresholds.
+- **KPI Extraction**:
+  - **Handling**: Yaw rate gain, lateral acceleration gain, response time, settling time.
+  - **Steering**: Steering rate, delays (Steer-to-Yaw, Steer-to-LatAcc).
+  - **Ride**: RMS vertical acceleration, peak-to-peak acceleration.
+- **Visualization**: Automated time-series plotting and handling characteristic plots.
+- **Batch Processing**: Tools to process multiple datasets and export summaries.
 
-finalYaw = mean(yaw(max(1, end-round(cfg.kpi.steadyStateWindow_s/mean(diff(time)))):end));
-targetYaw = cfg.kpi.responsePercentage * finalYaw;
-responseTime_s = estimateResponseTime(time, yaw, targetYaw, events.start_time_s(1));
-settlingTime_s = estimateSettlingTime(time, yaw, finalYaw, cfg.kpi.settlingBandPercentage, events.start_time_s(1));
+## Repository Structure
 
-kpis = table(peakLatAccel_mps2, peakYawRate_degps, yawRateGain_1ps, ...
-    latAccelGain_mps2_per_deg, responseTime_s, settlingTime_s);
-end
+```text
+vehicle-dynamics-kpi-toolbox/
+├── src/                # Source code
+│   ├── core/           # KPI computation logic
+│   ├── io/             # Data loading and exporting
+│   ├── maneuvers/      # Event detection algorithms
+│   ├── prep/           # Signal preprocessing and filtering
+│   └── viz/            # Plotting and visualization
+├── scripts/            # Example scripts and utilities
+├── tests/              # Unit tests
+├── docs/               # Documentation
+└── startup.m           # Environment setup script
+```
 
-function v = safeDivide(a, b)
-if abs(b) < eps
-    v = NaN;
-else
-    v = a / b;
-end
-end
+## Getting Started
 
-function rt = estimateResponseTime(time, signal, target, t0)
-idx = find(abs(signal) >= abs(target), 1, "first");
-if isempty(idx)
-    rt = NaN;
-else
-    rt = time(idx) - t0;
-end
-end
+1. Open MATLAB and navigate to the project root.
+2. Run `startup.m` to set up the paths.
+3. Generate synthetic data (if you don't have real data):
+   ```matlab
+   generateSyntheticData();
+   ```
+4. Run the demo analysis:
+   ```matlab
+   run('scripts/runSingleManeuverAnalysis.m');
+   ```
 
-function st = estimateSettlingTime(time, signal, finalValue, bandPct, t0)
-if abs(finalValue) < eps
-    st = NaN;
-    return;
-end
-band = abs(finalValue) * bandPct;
-inside = abs(signal - finalValue) <= band;
-st = NaN;
-for k = 1:numel(signal)
-    if all(inside(k:end))
-        st = time(k) - t0;
-        return;
-    end
-end
-end
+## Testing & Validation
+
+### Professional Unit Tests
+Il toolbox usa il framework nativo di MATLAB. Per eseguire tutti i test:
+```matlab
+results = runtests('tests/ToolboxTest.m');
+table(results) % Mostra i risultati in formato tabella
+```
+
+### Robustness Validation
+Per verificare come il toolbox gestisce il rumore dei sensori:
+```matlab
+run('scripts/validateRobustness.m')
+```
+Questo script confronterà i dati "sporchi" filtrati con il valore teorico reale.
+
+## Project Status & Roadmap
+
+### ✅ Current Status (MVP)
+- **Modular Architecture**: Clean separation between IO, Preprocessing, and Core KPIs.
+- **Bicycle Model Integration**: Theoretical ground truth comparison for yaw response.
+- **Robustness**: Handling of noisy data, NaNs, and missing columns with specific Error IDs.
+- **Testing**: Native MATLAB unit testing class (`ToolboxTest.m`).
+- **Synthetic Data**: Integrated generator for Step, Sine, and Ride events.
+
+### 🚀 Future Roadmap
+- **Frequency Response Analysis**: Transfer functions (Gain/Phase) and Coherence.
+- **Advanced Filtering**: Integration of Butterworth and zero-phase `filtfilt` algorithms.
+- **ISO Standard Compliance**: Weighted vertical acceleration filters (ISO 2631).
+- **Interactive UI**: MATLAB App Designer interface for drag-and-drop analysis.
+- **PDF Reporting**: Automated generation of technical data sheets.
+
+## Requirements
+
+- **MATLAB**: R2022b or later recommended.
+- **Toolboxes**: No additional toolboxes required (designed for maximum portability).

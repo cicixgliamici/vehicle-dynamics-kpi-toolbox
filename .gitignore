@@ -1,0 +1,19 @@
+# MATLAB temporary files
+*.asv
+*.m~
+*.slxc
+*.mex*
+*.log
+
+# Project specific generated files
+data/synthetic/*.csv
+figures/*.png
+figures/*.fig
+results/*.csv
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# MATLAB local preferences
+.matlab/
