@@ -21,9 +21,9 @@ if ~any(window), window = true(height(data), 1); end
 vertAcc = data.vertical_accel_mps2(window);
 
 % Peak-to-peak and RMS are standard for basic ride comfort
-% Note: In future versions, frequency weighting (ISO 2631) can be added here.
+% We use the manual RMS formula to avoid dependency on Signal Processing Toolbox
 peakToPeakVertAcc_mps2 = max(vertAcc) - min(vertAcc);
-rmsVertAcc_mps2 = rms(vertAcc - mean(vertAcc));
+rmsVertAcc_mps2 = sqrt(mean((vertAcc - mean(vertAcc)).^2));
 
 kpis = table(peakToPeakVertAcc_mps2, rmsVertAcc_mps2);
 

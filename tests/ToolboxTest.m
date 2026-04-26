@@ -6,6 +6,19 @@ classdef ToolboxTest < matlab.unittest.TestCase
         Config
     end
     
+    methods(TestClassSetup)
+        function setupPath(testCase)
+            % Ensure all source folders are on the path during CI
+            % We go up one level from the 'tests' folder to find the root
+            here = fileparts(mfilename('fullpath'));
+            projectRoot = fullfile(here, '..');
+            addpath(genpath(projectRoot));
+            
+            % Informative message for the CI log
+            fprintf('CI Path Setup: Added %s to path.\n', projectRoot);
+        end
+    end
+
     methods(TestMethodSetup)
         function setupData(testCase)
             % This runs before EACH test method

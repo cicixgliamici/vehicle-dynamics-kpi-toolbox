@@ -20,6 +20,5 @@ jobs:
       - name: Run all tests
         uses: matlab-actions/run-tests@v1
         with:
-          source-folder: src
           select-by-folder: tests
           strict: true
