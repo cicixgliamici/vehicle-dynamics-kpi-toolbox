@@ -9,13 +9,18 @@ classdef ToolboxTest < matlab.unittest.TestCase
     methods(TestClassSetup)
         function setupPath(testCase)
             % Ensure all source folders are on the path during CI
-            % We go up one level from the 'tests' folder to find the root
             here = fileparts(mfilename('fullpath'));
             projectRoot = fullfile(here, '..');
             addpath(genpath(projectRoot));
-            
-            % Informative message for the CI log
-            fprintf('CI Path Setup: Added %s to path.\n', projectRoot);
+        end
+    end
+
+    methods(TestClassTeardown)
+        function cleanupPath(testCase)
+            % Clean up the path after tests (Production best practice)
+            here = fileparts(mfilename('fullpath'));
+            projectRoot = fullfile(here, '..');
+            rmpath(genpath(projectRoot));
         end
     end
 
@@ -27,16 +32,19 @@ classdef ToolboxTest < matlab.unittest.TestCase
             % Create a clean ramp steering signal
             t = (0:0.01:10)';
             steer = zeros(size(t));
-            steer(t > 2) = 20 * (t(t > 2) - 2); % Ramp steer
+            steer(t > 2) = 20 * (t(t > 2) - 2); 
             steer(steer > 50) = 50;
             
-            % Simple response
+            % Simple response: Gain = 0.5
             yaw = 0.5 * steer;
             latacc = 0.2 * yaw;
             
+            % Use cellstr for maximum compatibility with older MATLAB versions
+            varNames = cellstr(testCase.Config.requiredColumns);
+            
             testCase.TestData = table(t, 20*ones(size(t)), steer, yaw, latacc, ...
                 zeros(size(t)), zeros(size(t)), zeros(size(t)), ...
-                'VariableNames', testCase.Config.requiredColumns);
+                'VariableNames', varNames);
         end
     end
     
