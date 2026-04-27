@@ -1,6 +1,6 @@
 # Vehicle Dynamics KPI Toolbox
 
-![MATLAB CI](https://github.com/tuo-username/vehicle-dynamics-kpi-toolbox/actions/workflows/matlab-ci.yml/badge.svg)
+![MATLAB CI](https://github.com/cicixgliamici/vehicle-dynamics-kpi-toolbox/actions/workflows/matlab-ci.yml/badge.svg)
 
 A MATLAB-based toolbox for processing vehicle dynamics data, extracting Key Performance Indicators (KPIs), and generating reports.
 
