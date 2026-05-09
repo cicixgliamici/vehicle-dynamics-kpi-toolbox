@@ -46,4 +46,11 @@ cfg.veh.Cf = 80000;      % Cornering stiffness front [N/rad] (per axle)
 cfg.veh.Cr = 100000;     % Cornering stiffness rear [N/rad] (per axle)
 cfg.veh.ratio = 15;      % Steering ratio (Steering Wheel Angle / Wheel Angle)
 
+% --- Frequency Analysis Parameters ---
+cfg.freq.windowLength = 256;  % FFT window size (samples)
+cfg.freq.overlap = 128;       % Window overlap (samples)
+cfg.freq.minFreq_Hz = 0.1;    % Start frequency for analysis
+cfg.freq.maxFreq_Hz = 5.0;    % End frequency for analysis
+cfg.freq.bandwidthThreshold_dB = -3; % Threshold for bandwidth calculation
+
 end

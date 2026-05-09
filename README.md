@@ -2,7 +2,7 @@
 
 ![MATLAB CI](https://github.com/tuo-username/vehicle-dynamics-kpi-toolbox/actions/workflows/matlab-ci.yml/badge.svg)
 
-A MATLAB-based toolbox for processing vehicle dynamics data, extracting Key Performance Indicators (KPIs), and generating reports.
+A MATLAB-based toolbox for processing vehicle dynamics data, extracting Key Performance Indicators (KPIs), and generating reports. Il toolbox integra modelli fisici avanzati (Bicycle Model) e analisi spettrale per una validazione scientifica dei risultati.
 
 ## Features
 
@@ -60,7 +60,16 @@ run('scripts/validateRobustness.m')
 ```
 Questo script confronterà i dati "sporchi" filtrati con il valore teorico reale.
 
+## Security & Reliability
+
+- **Automated Pipeline**: Include linting statico, unit testing e auto-deployment di report PDF/CSV tramite GitHub Actions.
+- **Defensive Programming**: Validazione dei tipi di dato (`isnumeric`) e gestione dei timestamp non monotoni per prevenire errori in produzione.
+- **Large Scale Validation**: Sistema di generazione batch per testare la scalabilità su centinaia di dataset sintetici con vari livelli di rumore.
+
 ## Project Status & Roadmap
+
+### 📊 Project Walkthrough
+Per una spiegazione dettagliata del problema, della soluzione tecnica e dell'architettura del codice, consulta la [Guida al Progetto](file:///C:/Users/darkl/.gemini/antigravity/brain/1b4c2ece-7553-43df-8972-e632df3f4358/PROJECT_WALKTHROUGH.md).
 
 ### ✅ Current Status (MVP)
 - **Modular Architecture**: Clean separation between IO, Preprocessing, and Core KPIs.

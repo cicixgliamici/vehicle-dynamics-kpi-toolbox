@@ -24,7 +24,7 @@ end
 for i = 1:numel(cfg.requiredColumns)
     col = cfg.requiredColumns(i);
     if ~isnumeric(data.(col))
-        error('validateVehicleData:NonNumericColumn', ...
+        error('vdt:validate:NonNumeric', ...
             'Column %s must be numeric.', col);
     end
 end

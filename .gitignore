@@ -1,19 +1,18 @@
-# MATLAB temporary files
+# MATLAB temporary and binary files
 *.asv
 *.m~
 *.slxc
 *.mex*
 *.log
+*.mat
+*.xlsx
+*.pdf
+!docs/*.pdf # Keep documentation PDFs if any
 
 # Project specific generated files
 data/synthetic/*.csv
 figures/*.png
 figures/*.fig
 results/*.csv
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# MATLAB local preferences
-.matlab/
+results/*.json
+ROADMAP_INTERNAL.md

@@ -55,6 +55,15 @@ vertical = 0.08 * randn(n, 1) + 2.5 * exp(-0.5*((time_s-8)/0.15).^2) ...
          - 1.4 * exp(-0.5*((time_s-8.4)/0.25).^2);
 writeDataset(fullfile(outDir, "ride_bump.csv"), time_s, vehicle_speed_mps, steer, yaw, latacc, vertical);
 
+% 5. Frequency sweep (Chirp) for TF analysis
+% f(t) = f0 + (f1-f0)/T * t
+f0 = 0.1; f1 = 5.0; T_sweep = 20;
+phi = 2*pi * (f0 * time_s + (f1-f0)/(2*T_sweep) * time_s.^2);
+steer = 15 * sin(phi);
+yaw = firstOrderResponse(time_s, steer, 0.48, 0.15); % Faster response for sweep
+latacc = 0.22 * yaw + 0.04 * randn(n, 1);
+writeDataset(fullfile(outDir, "frequency_sweep.csv"), time_s, vehicle_speed_mps, steer, yaw, latacc);
+
 fprintf("Synthetic datasets generated in %s\n", outDir);
 end
 

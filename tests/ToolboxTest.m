@@ -111,5 +111,68 @@ classdef ToolboxTest < matlab.unittest.TestCase
             cleaned = removeMissingSamples(noisyData);
             testCase.verifyFalse(any(isnan(cleaned.yaw_rate_degps)), 'NaNs should be interpolated');
         end
+
+        function testPlotResults(testCase)
+            % Verify that plotResults creates the expected image files
+            tempDir = fullfile(tempdir, 'vdt_test_plots');
+            if ~exist(tempDir, 'dir'), mkdir(tempDir); end
+            
+            events = detectManeuvers(testCase.TestData, testCase.Config);
+            [kpis, frResults] = computeAllKPIs(testCase.TestData, events, testCase.Config);
+            
+            plotResults(testCase.TestData, kpis, tempDir, frResults);
+            
+            testCase.verifyTrue(isfile(fullfile(tempDir, 'timeseries.png')), 'TimeSeries plot missing');
+            testCase.verifyTrue(isfile(fullfile(tempDir, 'yaw_response.png')), 'YawResponse plot missing');
+            
+            % Cleanup
+            rmdir(tempDir, 's');
+        end
+
+        function testFrequencyAnalysis(testCase)
+            % Create a long signal with multiple frequencies
+            fs = 100;
+            t = (0:1/fs:20)';
+            % Steering: sum of several sines
+            steer = sin(2*pi*0.5*t) + 0.5*sin(2*pi*2.0*t) + 0.2*sin(2*pi*4.0*t);
+            % Linear system: Gain=0.5, Phase=0
+            yaw = 0.5 * steer;
+            
+            data = testCase.TestData(1:length(t), :);
+            data.time_s = t;
+            data.steering_wheel_angle_deg = steer;
+            data.yaw_rate_degps = yaw;
+            
+            [frResults, frMetrics] = computeFrequencyResponse(data, testCase.Config);
+            
+            % Verify gain is approx 0.5 across spectrum
+            avgGain = mean(abs(frResults.TF_Yaw));
+            testCase.verifyGreaterThan(avgGain, 0.45);
+            testCase.verifyLessThan(avgGain, 0.55);
+            
+            % Verify high coherence
+            testCase.verifyGreaterThan(mean(frResults.Coh_Yaw), 0.9, 'Coherence should be high for linear data');
+            
+            % Verify bandwidth KPI exists
+            testCase.verifyTrue(ismember('Bandwidth_Hz_Yaw', frMetrics.Properties.VariableNames));
+        end
+
+        function testInputSanitization(testCase)
+            % Defensive programming: Verify that non-numeric data in table triggers error
+            badData = testCase.TestData;
+            badData.steering_wheel_angle_deg = cellstr(repmat("string", height(badData), 1));
+            
+            % Should fail validation
+            testCase.verifyError(@() validateVehicleData(badData), 'vdt:validate:NonNumeric');
+        end
+
+        function testRobustnessToOutliers(testCase)
+            % Verify that large spikes (outliers) are handled by the filter
+            noisyData = testCase.TestData;
+            noisyData.yaw_rate_degps(50) = 1000; % Massive spike
+            
+            filtered = lowPassFilterSignal(noisyData.yaw_rate_degps, 10);
+            testCase.verifyLessThan(max(filtered), 500, 'Filter should suppress outliers');
+        end
     end
 end

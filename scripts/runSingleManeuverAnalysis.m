@@ -23,7 +23,7 @@ data = preprocessVehicleData(rawData, cfg);
 data = [data theory]; % Append theoretical signals to main table
 
 events = detectManeuvers(data, cfg);
-kpis = computeAllKPIs(data, events, cfg);
+[kpis, frResults] = computeAllKPIs(data, events, cfg);
 
 disp("Computed KPIs:");
 disp(kpis);
@@ -32,9 +32,6 @@ disp(modelKpis);
 
 % Plotting
 figuresDir = fullfile("..", "figures");
-if ~exist(figuresDir, "dir"), mkdir(figuresDir); end
+plotResults(data, kpis, figuresDir, frResults);
 
-plotTimeSeries(data, fullfile(figuresDir, "sine_steer_timeseries.png"));
-plotYawResponse(data, kpis, fullfile(figuresDir, "sine_steer_yaw_response.png"));
-
-fprintf("Analysis complete. Figures saved in %s\n", figuresDir);
+fprintf("Analysis complete.\n");
