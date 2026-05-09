@@ -59,6 +59,23 @@ classdef ToolboxTest < matlab.unittest.TestCase
             
             testCase.verifyLessThan(filtStd, origStd, 'Filter should reduce signal variance');
         end
+
+         function testFilteringEvenWindow(testCase)
+            % Even window size should be normalized to the next odd size
+            signal = (1:9)';
+            filtered = lowPassFilterSignal(signal, 4);
+
+            testCase.verifySize(filtered, size(signal), 'Output size should match input size');
+            testCase.verifyEqual(filtered(5), 5, 'Center sample should match 5-point moving average');
+        end
+
+        function testFilteringNaNHandling(testCase)
+            % The filter should handle isolated NaNs by averaging neighbors
+            signal = [1; NaN; 3; 4; 5];
+            filtered = lowPassFilterSignal(signal, 3);
+
+            testCase.verifyFalse(isnan(filtered(2)), 'Isolated NaN should be smoothed by omitnan');
+        end
         
         function testManeuverDetection(testCase)
             % Test if we detect at least one event in our ramp steering
