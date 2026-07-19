@@ -191,5 +191,99 @@ classdef ToolboxTest < matlab.unittest.TestCase
             filtered = lowPassFilterSignal(noisyData.yaw_rate_degps, 10);
             testCase.verifyLessThan(max(filtered), 500, 'Filter should suppress outliers');
         end
+
+        function testSteeringKPIs(testCase)
+            % Verify steering KPIs have physically meaningful values
+            events = detectManeuvers(testCase.TestData, testCase.Config);
+            kpis = computeAllKPIs(testCase.TestData, events, testCase.Config);
+
+            % Steering amplitude must be positive (we input a ramp up to 50 deg)
+            testCase.verifyGreaterThan(kpis.steeringAmplitude_deg, 0, ...
+                'Steering amplitude must be positive');
+            % Steering rate must also be positive
+            testCase.verifyGreaterThan(kpis.peakSteeringRate_degps, 0, ...
+                'Peak steering rate must be positive');
+            % Delay columns must exist (values can be NaN for short signals)
+            testCase.verifyTrue(ismember('steeringToYawDelay_s', kpis.Properties.VariableNames), ...
+                'steeringToYawDelay_s column must be present in KPI table');
+        end
+
+        function testRideKPIs(testCase)
+            % Verify ride comfort KPIs are non-negative
+            events = detectManeuvers(testCase.TestData, testCase.Config);
+            kpis = computeAllKPIs(testCase.TestData, events, testCase.Config);
+
+            testCase.verifyGreaterThanOrEqual(kpis.rmsVertAcc_mps2, 0, ...
+                'RMS vertical acceleration must be non-negative');
+            testCase.verifyGreaterThanOrEqual(kpis.peakToPeakVertAcc_mps2, 0, ...
+                'Peak-to-peak vertical acceleration must be non-negative');
+        end
+
+        function testExportKpiSummary(testCase)
+            % Verify that exportKpiSummary creates a readable CSV with metadata
+            tempFile = fullfile(tempdir, 'vdt_test_kpi_export.csv');
+            if isfile(tempFile), delete(tempFile); end
+
+            events = detectManeuvers(testCase.TestData, testCase.Config);
+            [kpis, ~] = computeAllKPIs(testCase.TestData, events, testCase.Config);
+
+            exportKpiSummary(kpis, tempFile, 'test_source.csv');
+
+            testCase.verifyTrue(isfile(tempFile), 'Export file must be created');
+            exported = readtable(tempFile, 'VariableNamingRule', 'preserve');
+            testCase.verifyTrue(ismember('export_timestamp', exported.Properties.VariableNames), ...
+                'Exported CSV must contain export_timestamp column');
+            testCase.verifyTrue(ismember('source_file', exported.Properties.VariableNames), ...
+                'Exported CSV must contain source_file column');
+
+            % Cleanup
+            delete(tempFile);
+        end
+
+        function testKalmanFilter(testCase)
+            % Verify that the KF converges and produces physically bounded output.
+            % For a low-amplitude steering input at constant speed, β must be
+            % within a physically plausible range (< 15 deg for a passenger car).
+            [kfResults, kf_kpis] = estimateSideslip(testCase.TestData, testCase.Config);
+
+            testCase.verifyNotEmpty(kfResults, 'KF results table must not be empty');
+            testCase.verifySize(kfResults, [height(testCase.TestData), 5], ...
+                'KF results must have one row per data sample and 5 columns');
+
+            testCase.verifyLessThan(kf_kpis.maxSideslip_deg, 15.0, ...
+                'Sideslip angle must be within physical limits (< 15 deg)');
+            testCase.verifyGreaterThanOrEqual(kf_kpis.maxSideslip_deg, 0, ...
+                'Max sideslip magnitude must be non-negative');
+        end
+
+        function testKalmanCovariance(testCase)
+            % Verify that the Kalman filter covariance P_trace remains
+            % positive throughout the run (necessary condition for PSD matrix).
+            % A negative trace would indicate numerical instability.
+            [kfResults, ~] = estimateSideslip(testCase.TestData, testCase.Config);
+
+            testCase.verifyTrue(all(kfResults.P_trace > 0), ...
+                'P trace must remain positive (covariance matrix must stay PSD)');
+
+            % Also verify the filter "converges": later P_trace <= initial P_trace
+            % (uncertainty should not grow unboundedly after initial transient)
+            initialTrace = kfResults.P_trace(1);
+            finalTrace   = mean(kfResults.P_trace(end-10:end));
+            testCase.verifyLessThanOrEqual(finalTrace, initialTrace * 2, ...
+                'KF covariance should not diverge significantly from initial value');
+        end
+
+        function testKalmanPhysics(testCase)
+            % Verify that sign of β is physically correct:
+            % A positive (right-hand) steering input at constant speed must
+            % produce a positive sideslip angle (vehicle slips outward).
+            % Our test data has a ramp in positive steering, so β > 0.
+            [kfResults, ~] = estimateSideslip(testCase.TestData, testCase.Config);
+
+            % Check that β eventually becomes positive during the steering phase
+            beta_during_steer = kfResults.beta_est_deg(end-50:end);
+            testCase.verifyTrue(any(beta_during_steer > 0), ...
+                'Positive steering input must produce positive sideslip angle');
+        end
     end
 end

@@ -15,6 +15,18 @@ cfg.targetSampleTime_s = 0.01; % 100 Hz
 % requiring extra MATLAB toolboxes.
 cfg.lowPass.windowSamples = 9;
 
+% Signals to be low-pass filtered during preprocessing.
+% Centralised here so that preprocessVehicleData.m does not need
+% to hardcode signal names (single source of truth).
+cfg.lowPass.signalsToFilter = [ ...
+    "steering_wheel_angle_deg", ...
+    "yaw_rate_degps", ...
+    "lateral_accel_mps2", ...
+    "longitudinal_accel_mps2", ...
+    "roll_rate_degps", ...
+    "vertical_accel_mps2" ...
+];
+
 % Maneuver detection.
 cfg.maneuver.steeringThreshold_deg = 1.0;
 cfg.maneuver.minDuration_s = 0.5;
@@ -52,5 +64,20 @@ cfg.freq.overlap = 128;       % Window overlap (samples)
 cfg.freq.minFreq_Hz = 0.1;    % Start frequency for analysis
 cfg.freq.maxFreq_Hz = 5.0;    % End frequency for analysis
 cfg.freq.bandwidthThreshold_dB = -3; % Threshold for bandwidth calculation
+
+% --- Kalman Filter Parameters (Sideslip Estimation) ---
+% Process noise Q: models uncertainty in the bicycle model itself.
+%   Q(1,1) — variance on β dynamics (small: we trust the physics)
+%   Q(2,2) — variance on r dynamics (slightly larger: yaw can be noisy)
+cfg.kf.Q  = diag([1e-4, 1e-3]);
+
+% Measurement noise R: models IMU yaw-rate sensor noise.
+%   Typical MEMS gyro noise ≈ 0.5 deg/s → variance ≈ (0.5·π/180)² rad²/s²
+cfg.kf.R  = (0.5 * pi/180)^2;
+
+% Initial state covariance P0:
+%   Large P0(1,1): we have NO prior knowledge of β at t=0.
+%   Moderate P0(2,2): yaw rate is initialised from the first measurement.
+cfg.kf.P0 = diag([0.01, 0.05]);
 
 end

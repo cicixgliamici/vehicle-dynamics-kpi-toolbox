@@ -1,10 +1,15 @@
-function validateVehicleData(data)
+function validateVehicleData(data, cfg)
 %VALIDATEVEHICLEDATA Validate required columns and basic signal properties.
 %
 %   This is the 'Gatekeeper' function. It ensures the data structure is
 %   compatible with the physics engine of the toolbox.
+%
+%   validateVehicleData(data)        — uses default configuration.
+%   validateVehicleData(data, cfg)   — uses provided configuration struct.
 
-cfg = default_config();
+if nargin < 2 || isempty(cfg)
+    cfg = default_config();
+end
 columns = string(data.Properties.VariableNames);
 
 % 1. Column Integrity: Check for missing physical signals

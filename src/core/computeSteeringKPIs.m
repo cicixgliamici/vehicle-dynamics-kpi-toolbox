@@ -35,26 +35,50 @@ if isnan(dt) || dt <= 0, dt = 0.01; end % Fallback
 steeringRate_degps = gradient(steer, dt);
 peakSteeringRate_degps = max(abs(steeringRate_degps));
 
-% Phase/Delay Analysis
-steeringToYawDelay_s = estimateDelay(time, steer, yaw);
-steeringToLatAccelDelay_s = estimateDelay(time, steer, latacc);
+% Phase/Delay Analysis (using cross-correlation for robustness)
+steeringToYawDelay_s = xcorrDelay(time, steer, yaw);
+steeringToLatAccelDelay_s = xcorrDelay(time, steer, latacc);
 
 kpis = table(steeringAmplitude_deg, peakSteeringRate_degps, ...
     steeringToYawDelay_s, steeringToLatAccelDelay_s);
 
 end
 
-function delay = estimateDelay(time, inputSignal, outputSignal)
-    % Estimate delay using peak absolute derivative times.
+function delay = xcorrDelay(time, u, y)
+    % Estimate transport delay using normalized cross-correlation.
+    %
+    % This is the standard DSP method: it finds the time lag that
+    % maximizes the linear cross-correlation between input u and output y.
+    % Implemented without toolbox dependencies.
+    %
+    % Positive delay means y lags behind u (causal system, expected).
     dt = mean(diff(time));
-    inputDerivative = abs(gradient(inputSignal, dt));
-    outputAbs = abs(outputSignal);
+    n  = length(u);
 
-    [~, inputIdx] = max(inputDerivative);
-    [~, outputIdx] = max(outputAbs);
+    % Normalize to zero-mean, unit variance for a scale-independent result
+    u_norm = (u - mean(u)) / (std(u) + eps);
+    y_norm = (y - mean(y)) / (std(y) + eps);
 
-    delay = time(outputIdx) - time(inputIdx);
-    if delay < 0 || delay > 1.0 % Unrealistic delay for a vehicle
+    % Cap search at 1 second of lag (physiologically max for a vehicle)
+    maxLag = min(round(1.0 / dt), n - 1);
+    lags   = -maxLag:maxLag;
+    R      = zeros(1, numel(lags));
+
+    for k = 1:numel(lags)
+        lag = lags(k);
+        if lag >= 0
+            R(k) = sum(u_norm(1:n-lag) .* y_norm(lag+1:n));
+        else
+            R(k) = sum(u_norm(1-lag:n)  .* y_norm(1:n+lag));
+        end
+    end
+
+    [~, peakIdx] = max(R);
+    delayLag = lags(peakIdx);
+    delay    = delayLag * dt;
+
+    % Sanity check: discard physiologically impossible delays
+    if delay < 0 || delay > 1.0
         delay = NaN;
     end
 end

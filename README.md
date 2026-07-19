@@ -10,10 +10,12 @@ A MATLAB-based toolbox for processing vehicle dynamics data, extracting Key Perf
 - **Maneuver Detection**: Automatic detection of steering events based on configurable thresholds.
 - **KPI Extraction**:
   - **Handling**: Yaw rate gain, lateral acceleration gain, response time, settling time.
-  - **Steering**: Steering rate, delays (Steer-to-Yaw, Steer-to-LatAcc).
+  - **Steering**: Steering rate, transport delays via cross-correlation (Steer-to-Yaw, Steer-to-LatAcc).
   - **Ride**: RMS vertical acceleration, peak-to-peak acceleration.
+- **Frequency Analysis**: Custom Welch PSD/CSD estimator (no toolbox), Bode gain/phase, coherence, bandwidth.
 - **Visualization**: Automated time-series plotting and handling characteristic plots.
-- **Batch Processing**: Tools to process multiple datasets and export summaries.
+- **Batch Processing & Export**: Tools to process multiple datasets and export structured CSV summaries with traceability metadata.
+- **Sideslip Estimation**: Linear Kalman Filter (2-state bicycle model) estimates the vehicle sideslip angle β — not measurable by standard sensors.
 
 ## Repository Structure
 
@@ -28,6 +30,7 @@ vehicle-dynamics-kpi-toolbox/
 ├── scripts/            # Example scripts and utilities
 ├── tests/              # Unit tests
 ├── docs/               # Documentation
+│   └── ARCHITECTURE.md # Data pipeline, KPI reference, naming conventions
 └── startup.m           # Environment setup script
 ```
 
@@ -68,22 +71,28 @@ Questo script confronterà i dati "sporchi" filtrati con il valore teorico reale
 
 ## Project Status & Roadmap
 
-### 📊 Project Walkthrough
-Per una spiegazione dettagliata del problema, della soluzione tecnica e dell'architettura del codice, consulta la [Guida al Progetto](file:///C:/Users/darkl/.gemini/antigravity/brain/1b4c2ece-7553-43df-8972-e632df3f4358/PROJECT_WALKTHROUGH.md).
+### 📐 Documentation
+
+| Document | Description |
+|---|---|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Data pipeline, KPI reference, naming conventions, Kalman Filter |
+| [MATH_REFERENCE.md](docs/MATH_REFERENCE.md) | Full mathematical derivations: filter frequency response, Welch PSD, cross-correlation delay, bicycle model, KF observability proof |
 
 ### ✅ Current Status (MVP)
 - **Modular Architecture**: Clean separation between IO, Preprocessing, and Core KPIs.
 - **Bicycle Model Integration**: Theoretical ground truth comparison for yaw response.
+- **Sideslip Estimation**: Time-varying Linear Kalman Filter (2-state) for β estimation from yaw rate — with covariance tracking and innovation diagnostics.
 - **Robustness**: Handling of noisy data, NaNs, and missing columns with specific Error IDs.
-- **Testing**: Native MATLAB unit testing class (`ToolboxTest.m`).
-- **Synthetic Data**: Integrated generator for Step, Sine, and Ride events.
+- **Testing**: Native MATLAB unit testing class (`ToolboxTest.m`) — 14 tests covering all modules including KF stability and physics checks.
+- **Synthetic Data**: Integrated generator for Step, Sine, Ride, and Frequency Sweep events.
 
 ### 🚀 Future Roadmap
-- **Frequency Response Analysis**: Transfer functions (Gain/Phase) and Coherence.
-- **Advanced Filtering**: Integration of Butterworth and zero-phase `filtfilt` algorithms.
-- **ISO Standard Compliance**: Weighted vertical acceleration filters (ISO 2631).
+- **Advanced Filtering**: Butterworth / zero-phase `filtfilt` IIR filter (requires Signal Processing Toolbox).
+- **ISO 2631 Compliance**: Frequency-weighted RMS vertical acceleration for standardised ride comfort scoring.
+- **Nonlinear Tyre Model**: Replace linear cornering stiffness with Pacejka Magic Formula for limit behaviour.
+- **EKF Upgrade**: Extend the Kalman Filter to handle nonlinear dynamics (Pacejka tyres, varying Cf/Cr).
 - **Interactive UI**: MATLAB App Designer interface for drag-and-drop analysis.
-- **PDF Reporting**: Automated generation of technical data sheets.
+- **PDF Reporting**: Automated generation of technical data sheets via MATLAB Report Generator.
 
 ## Requirements
 

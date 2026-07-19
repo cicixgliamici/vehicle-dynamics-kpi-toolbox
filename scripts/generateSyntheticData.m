@@ -18,6 +18,10 @@ if ~exist(outDir, "dir")
     mkdir(outDir);
 end
 
+% Fix the random seed for reproducibility — ensures CI always produces
+% identical synthetic datasets across runs.
+rng(42);
+
 fs = 100;                  % Hz
 Ts = 1 / fs;
 time_s = (0:Ts:20)';
